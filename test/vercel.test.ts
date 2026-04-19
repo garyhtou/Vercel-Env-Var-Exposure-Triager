@@ -132,6 +132,34 @@ test("projectEnvSafe: preserves the configurationId field so integration-backed 
 	assert.equal(out.configurationId, "cfg_1");
 });
 
+test("projectEnvSafe: preserves updatedBy, createdBy, and lastEditedByDisplayName (owner-column sources)", () => {
+	const out = __test.projectEnvSafe({
+		id: "e",
+		key: "K",
+		type: "encrypted",
+		target: ["production"],
+		updatedBy: "uid_upd",
+		createdBy: "uid_crt",
+		lastEditedByDisplayName: "Alice",
+	});
+	assert.equal(out.updatedBy, "uid_upd");
+	assert.equal(out.createdBy, "uid_crt");
+	assert.equal(out.lastEditedByDisplayName, "Alice");
+});
+
+test("projectEnvSafe: does NOT preserve old misnamed field (lastUpdatedBy)", () => {
+	// Guard against regression: previously we looked for `lastUpdatedBy`,
+	// which Vercel doesn't actually return. Ensure it's filtered out.
+	const out = __test.projectEnvSafe({
+		id: "e",
+		key: "K",
+		type: "encrypted",
+		target: ["production"],
+		lastUpdatedBy: "leaky",
+	} as unknown as Record<string, unknown>);
+	assert.equal((out as Record<string, unknown>)["lastUpdatedBy"], undefined);
+});
+
 // ---- team member shape compat ----
 
 test("normalizeMember: reads flat {uid,email,username,name}", () => {

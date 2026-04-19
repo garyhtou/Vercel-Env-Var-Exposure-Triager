@@ -225,11 +225,14 @@ async function main(): Promise<void> {
 		log(`    ${projects.length} projects${args.projectFilters.length > 0 ? " (after --project filter)" : ""}`);
 		totalProjectsScanned += projects.length;
 
-		// Team member directory is only needed to resolve the UIDs stored on each env
-		// var's `lastUpdatedBy` (and on deployment `creator.uid`) into human-readable
-		// names and emails for the CSV owner columns. If this call fails, we can still
-		// produce a usable worklist — just with raw UIDs in the owner columns.
-		log("  [3/5] Fetching team members (to resolve owner UIDs → names/emails on each row)...");
+		// Team member directory is used to:
+		//   (a) resolve `env.updatedBy` / `createdBy` UIDs to emails (primary_owner_email)
+		//   (b) resolve `deployment.creator.uid` UIDs to names/emails (backup_owner_*)
+		// Primary owner *names* come from the env var's own `lastEditedByDisplayName`
+		// when present (populated even for users who have left the team). If this
+		// call fails, the scan still produces rows — just without owner emails and
+		// with UIDs in place of backup-owner names.
+		log("  [3/5] Fetching team members (to resolve owner UIDs → emails on each row)...");
 		let members: Map<string, import("./vercel.js").TeamMember>;
 		try {
 			members = await client.listTeamMembers();
@@ -288,8 +291,18 @@ async function main(): Promise<void> {
 			}
 
 			for (const env of rotatable) {
-				const primary = resolveOwner(env.lastUpdatedBy, members);
-				const backup = pickBackupOwner(rankedDeployers, env.lastUpdatedBy, members);
+				// Prefer updatedBy; fall back to createdBy if the env var has never been edited.
+				const primaryUid = env.updatedBy ?? env.createdBy;
+				const resolved = resolveOwner(primaryUid, members);
+				// Vercel ships a human-readable display name on every env var, which
+				// survives even after the user leaves the team. Prefer it for the
+				// name column; fall back to member-map resolution.
+				const primary = {
+					uid: resolved.uid,
+					name: env.lastEditedByDisplayName ?? resolved.name,
+					email: resolved.email,
+				};
+				const backup = pickBackupOwner(rankedDeployers, primaryUid, members);
 				const backupDeploys = backup ? deployCounts.get(backup.uid) ?? 0 : 0;
 				rows.push(buildRow(team, project, env, primary, backup, backupDeploys));
 			}

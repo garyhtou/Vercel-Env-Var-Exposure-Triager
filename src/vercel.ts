@@ -14,8 +14,12 @@ export type EnvVar = {
 	comment?: string | null;
 	createdAt?: number;
 	updatedAt?: number;
-	lastUpdatedBy?: string;
+	/** UID of the user who most recently edited the env var. Absent if never edited after creation. */
+	updatedBy?: string;
+	/** UID of the user who created the env var. Present on nearly every env var. */
 	createdBy?: string;
+	/** Human-readable display name of the user who last edited the env var. Populated even for users no longer on the team — use this for CSV owner names. */
+	lastEditedByDisplayName?: string;
 	configurationId?: string | null;
 };
 
@@ -93,7 +97,8 @@ const SAFE_ENV_FIELDS = [
 	"createdAt",
 	"updatedAt",
 	"createdBy",
-	"lastUpdatedBy",
+	"updatedBy",
+	"lastEditedByDisplayName",
 	"configurationId",
 ] as const satisfies readonly (keyof EnvVar)[];
 
