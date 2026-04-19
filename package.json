@@ -1,0 +1,22 @@
+{
+  "name": "vercel-env-var-exposure-triager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Audit tool for the Vercel April 2026 security incident: emits a CSV worklist of non-sensitive Vercel env vars that may need rotation. Never reads secret values.",
+  "author": {
+    "name": "Gary Tou",
+    "email": "gary@garytou.com",
+    "url": "https://garytou.com"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test 'test/**/*.test.ts'"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
